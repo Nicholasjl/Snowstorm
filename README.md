@@ -9,8 +9,10 @@ THIS PROGRAM IS DRAW LESSON FROM [GOLDENEYE](https://github.com/jseidl/GoldenEye
 SnowStorm is an python app for SECURITY TESTING PURPOSES ONLY!
 
 SnowStorm is a HTTP DoS Test Tool. 
-
+Using asyncio to make it faster and lighter.
 Attack Vector exploited: HTTP Keep Alive + NoCache
+
+Yep,it can be called GoldenEye-asyncio
 
 Usage
 -----------------------------------------------------------------------------------------------------------
