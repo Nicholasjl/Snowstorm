@@ -1,8 +1,20 @@
 import random
 import aiohttp
 import asyncio
+import logging
 from multiprocessing import Process, Manager
 from urllib.parse import urlparse
+
+logging.basicConfig(level = logging.INFO,format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+try:
+    import uvloop
+    asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+except:
+    logger.info("Don't have nvloop, use nature asyncio loop")
+
+
 
 METHOD_GET = 'get'
 METHOD_POST = 'post'
@@ -20,24 +32,24 @@ USER_AGENT_PARTS = {
         },
         'mac': {
             'name': ['Macintosh'],
-            'ext': ['Intel Mac OS X %d_%d_%d' % (random.randint(10, 11), random.randint(0, 9), random.randint(0, 5)) for i in range(1, 10)]
+            'ext': [f'Intel Mac OS X {random.randint(10, 11)}_{random.randint(0, 9)}_{random.randint(0, 5)}'  for i in range(1, 10)]
         },
     },
     'platform': {
         'webkit': {
-            'name': ['AppleWebKit/%d.%d' % (random.randint(535, 537), random.randint(1, 36)) for i in range(1, 30)],
+            'name': [f'AppleWebKit/{random.randint(535, 537)}.{random.randint(1, 36)}' for i in range(1, 30)],
             'details': ['KHTML, like Gecko'],
-            'extensions': ['Chrome/%d.0.%d.%d Safari/%d.%d' % (random.randint(6, 32), random.randint(100, 2000), random.randint(0, 100), random.randint(535, 537), random.randint(1, 36)) for i in range(1, 30)] + ['Version/%d.%d.%d Safari/%d.%d' % (random.randint(4, 6), random.randint(0, 1), random.randint(0, 9), random.randint(535, 537), random.randint(1, 36)) for i in range(1, 10)]
+            'extensions': [f'Chrome/{random.randint(6, 32)}.0.{random.randint(100, 2000)}.{random.randint(0, 100)} Safari/{random.randint(535, 537)}.{random.randint(1, 36)}' for i in range(1, 30)] + [f'Version/{random.randint(4, 6)}.{random.randint(0, 1)}.{random.randint(0, 9)} Safari/{random.randint(535, 537)}.{random.randint(1, 36)}' for i in range(1, 10)]
         },
         'iexplorer': {
             'browser_info': {
                 'name': ['MSIE 6.0', 'MSIE 6.1', 'MSIE 7.0', 'MSIE 7.0b', 'MSIE 8.0', 'MSIE 9.0', 'MSIE 10.0'],
                 'ext_pre': ['compatible', 'Windows; U'],
-                'ext_post': ['Trident/%d.0' % i for i in range(4, 6)] + ['.NET CLR %d.%d.%d' % (random.randint(1, 3), random.randint(0, 5), random.randint(1000, 30000)) for i in range(1, 10)]
+                'ext_post': [f'Trident/{i}.0'  for i in range(4, 6)] + [f'.NET CLR {random.randint(1, 3)}.{random.randint(0, 5)}.{random.randint(1000, 30000)}' for i in range(1, 10)]
             }
         },
         'gecko': {
-            'name': ['Gecko/%d%02d%02d Firefox/%d.0' % (random.randint(2001, 2010), random.randint(1, 31), random.randint(1, 12), random.randint(10, 25)) for i in range(1, 30)],
+            'name': [f'Gecko/{random.randint(2001, 2010)}{random.randint(1, 31):02d}{random.randint(1, 12):02d} Firefox/{random.randint(10, 25)}.0'  for i in range(1, 30)],
             'details': [],
             'extensions': []
         }
@@ -109,7 +121,8 @@ class Laser(Process):
             'Mozilla/4.0 (compatible; MSIE 6.1; Windows XP)',
             'Opera/9.80 (Windows NT 5.2; U; ru) Presto/2.5.22 Version/10.51',
         ]
-
+        if self.debug:
+            logger.setLevel(level=logging.DEBUG)
     # builds random ascii string
 
     def buildblock(self, size):
@@ -132,8 +145,8 @@ class Laser(Process):
 
     def run(self):
 
-        if self.debug:
-            print(f"Starting worker {self.name}")
+        
+        logger.debug(f"Starting worker {self.name}")
 
         try:
 
@@ -153,8 +166,8 @@ class Laser(Process):
             else:
                 pass  # silently ignore
 
-        if self.debug:
-            print("Worker {self.name} completed run. Sleeping...")
+        
+        logger.debug(f"Worker {self.name} completed run. Sleeping...")
 
     async def task(self):
         async with aiohttp.ClientSession() as sess:
@@ -256,8 +269,7 @@ class Laser(Process):
             acceptCharset = ['ISO-8859-1', 'utf-8',
                              'Windows-1251', 'ISO-8859-2', 'ISO-8859-15', ]
             random.shuffle(acceptCharset)
-            http_headers['Accept-Charset'] = '{0},{1};q={2},*;q={3}'.format(
-                acceptCharset[0], acceptCharset[1], round(random.random(), 1), round(random.random(), 1))
+            http_headers['Accept-Charset'] = f'{acceptCharset[0]},{acceptCharset[1]};q={round(random.random(), 1)},*;q={round(random.random(), 1)}'
 
         if random.randrange(2) == 0:
             # Random Referer
@@ -305,36 +317,34 @@ class Laser(Process):
             browser_string = random.choice(browser['name'])
 
             if 'ext_pre' in browser:
-                browser_string = "%s; %s" % (random.choice(
-                    browser['ext_pre']), browser_string)
+                browser_string = f"{random.choice(browser['ext_pre'])}; {browser_string}"
 
-            sysinfo = "%s; %s" % (browser_string, sysinfo)
+            sysinfo = f"{browser_string}; {sysinfo}"
 
             if 'ext_post' in browser:
-                sysinfo = "%s; %s" % (
-                    sysinfo, random.choice(browser['ext_post']))
+                sysinfo = f"{sysinfo}; {random.choice(browser['ext_post'])}"
 
         if 'ext' in os and os['ext']:
-            sysinfo = "%s; %s" % (sysinfo, random.choice(os['ext']))
+            sysinfo = f"{sysinfo}; {random.choice(os['ext'])}" 
 
-        ua_string = "%s (%s)" % (mozilla_version, sysinfo)
+        ua_string = f"{mozilla_version} ({sysinfo})"
 
         if 'name' in platform and platform['name']:
-            ua_string = "%s %s" % (ua_string, random.choice(platform['name']))
+            ua_string = f"{ua_string} {random.choice(platform['name'])}"
 
         if 'details' in platform and platform['details']:
-            ua_string = "%s (%s)" % (ua_string, random.choice(platform['details']) if len(
-                platform['details']) > 1 else platform['details'][0])
+            ua_string = f"{ua_string} ({random.choice(platform['details'])})" if len(
+                platform['details']) > 1 else platform['details'][0]
 
         if 'extensions' in platform and platform['extensions']:
-            ua_string = "%s %s" % (
-                ua_string, random.choice(platform['extensions']))
+            ua_string = f"{ua_string} {random.choice(platform['extensions'])}"
 
         return ua_string
     # Housekeeping
 
     def stop(self):
         self.runnable = False
+        self.terminate()
 
     # Counter Functions
     def incCounter(self):

@@ -32,19 +32,21 @@ import random
 import time
 import ssl
 import argparse
+import logging
 
-
-#import laser_test as Laser
 import Laser
 # Python version-specific
 if sys.version_info < (3, 5):
     # Python 2.x
-    error("This program need python 3.5+")
+    error("This program need python 3.6+")
 
 ####
 # Config
 ####
+
 DEBUG = False
+logging.basicConfig(level = logging.INFO,format = '%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 ####
 # Constants
@@ -55,10 +57,6 @@ METHOD_RAND = 'random'
 
 JOIN_TIMEOUT = 1.0
 
-
-METHOD_GET = 'get'
-METHOD_POST = 'post'
-METHOD_RAND = 'random'
 agents = []
 
 class SnowStorm(object):
@@ -89,7 +87,7 @@ class SnowStorm(object):
 
     def exit(self):
         self.stats()
-        print("Shutting down SnowStorm")
+        logger.info("Shutting down SnowStorm")
 
     def __del__(self):
         self.exit()
@@ -97,17 +95,17 @@ class SnowStorm(object):
     def printHeader(self):
 
         # Taunt!
-        print("SnowStorm fighting!")
+        print("SnowStorm Fighting!")
 
     # Do the fun!
     def Fight(self):
 
         self.printHeader()
-        print(
+        logger.info(
             f"Hitting webserver in mode {self.method} with {self.workers} workers running {self.coros} coroutine each")
 
-        if DEBUG:
-            print(f"Starting {self.workers} concurrent Laser workers")
+        
+        logger.debug(f"Starting {self.workers} concurrent Laser workers")
 
         # Start workers
 
@@ -115,10 +113,10 @@ class SnowStorm(object):
 
             worker = Laser.Laser(self.url, self.coros,
                                  self.counter,agents, self.no_payload,self.sslcheck, debug=DEBUG)
+            
             self.workersQueue.append(worker)
             worker.start()
-            if DEBUG:
-                print(worker.pid)
+            
             try:
                 # self.Run()
                 #p = Laser.Laser(self.url, self.coros, self.counter, DEBUG)
@@ -137,12 +135,12 @@ class SnowStorm(object):
 
             if self.counter[0] > 0 or self.counter[1] > 0:
 
-                print(
+                logger.info(
                     f"{self.counter[0]} SnowStorm punches deferred. ({self.counter[1]} Failed)")
 
                 if self.counter[0] > 0 and self.counter[1] > 0 and self.last_counter[0] == self.counter[0]:
 
-                    print("\tServer may be DOWN!")
+                    logger.info("\tServer may be DOWN!")
 
             self.last_counter[0] = self.counter[0]
             self.last_counter[1] = self.counter[1]
@@ -164,9 +162,9 @@ class SnowStorm(object):
             except (KeyboardInterrupt, SystemExit):
                 print("CTRL+C received. Killing all workers")
                 for worker in self.workersQueue:
+
                     try:
-                        if DEBUG:
-                            print(f"Killing worker {worker.name}")
+                        logger.debug(f"Killing worker {worker.name}")
                         # worker.terminate()
                         worker.stop()
                     except Exception:
@@ -215,6 +213,8 @@ def main():
     sslcheck = False if args.nosslcheck != False else True
     DEBUG = True if args.debug != False else False
 
+    if DEBUG :
+        logger.setLevel(level=logging.DEBUG)
     
     if args.agent:
             try:
@@ -223,6 +223,7 @@ def main():
             except EnvironmentError:
                 error(f"cannot read file {args.agent}")
     no_payload = True if args.no_payload != False else False
+
     if url[0:4].lower() != 'http':
         error("Invalid URL supplied")
     snowStorm = SnowStorm(url, workers, coros, method, sslcheck, no_payload)
