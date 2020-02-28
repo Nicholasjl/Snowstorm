@@ -27,7 +27,6 @@ Usage
          -m, --method       HTTP Method to use 'get' or 'post'  or 'random'           (default: get)
          -d, --debug        Enable Debug Mode [more verbose output]                   (default: False)
          -h, --help     Shows this help
-         -n, --nosslcheck no ssl check                                                (default:False)
          -a --agent the file for useragent(can find at res/list/useragents)           (default:None)
          --no-payload  Don't use headers                                              (default:False)
 
