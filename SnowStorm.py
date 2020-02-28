@@ -30,7 +30,6 @@ from urllib.parse import urlparse
 import sys
 import random
 import time
-import ssl
 import argparse
 import logging
 
@@ -76,10 +75,10 @@ class SnowStorm(object):
 
     method = METHOD_GET
 
-    def __init__(self, url, workers, coros, method, sslcheck, no_payload):
+    def __init__(self, url, workers, coros, method, no_payload):
         self.no_payload = no_payload
         self.url = url
-        self.sslcheck = sslcheck
+        
         self.coros = coros
         self.manager = Manager()
         self.workers = workers
@@ -112,7 +111,7 @@ class SnowStorm(object):
         for i in range(int(self.workers)):
 
             worker = Laser.Laser(self.url, self.coros,
-                                 self.counter,agents, self.no_payload,self.sslcheck, debug=DEBUG)
+                                 self.counter,agents, self.no_payload, debug=DEBUG)
             
             self.workersQueue.append(worker)
             worker.start()
@@ -197,8 +196,8 @@ def parse_args():
     parser.add_argument("-w", "--workers", default=10,
                         type=int, help='Number of concurrent workers')
     parser.add_argument("-d", "--debug", default=False, nargs='?')
-    parser.add_argument("--no-payload", default=False, nargs='?')
-    parser.add_argument("-n", "--nosslcheck", default=False, type=bool,nargs='?')
+    parser.add_argument("-n","--no-payload", default=False, nargs='?')
+    #parser.add_argument( "--nosslcheck", default=False, type=bool,nargs='?')
     parser.add_argument('-a', '--agent', default=None,nargs='?')
     return parser.parse_args()
 
@@ -210,7 +209,7 @@ def main():
     coros = args.coros
     method = args.method
     url = args.url
-    sslcheck = False if args.nosslcheck != False else True
+    #sslcheck = False if args.nosslcheck != False else True
     DEBUG = True if args.debug != False else False
 
     if DEBUG :
@@ -226,7 +225,7 @@ def main():
 
     if url[0:4].lower() != 'http':
         error("Invalid URL supplied")
-    snowStorm = SnowStorm(url, workers, coros, method, sslcheck, no_payload)
+    snowStorm = SnowStorm(url, workers, coros, method, no_payload)
 
     snowStorm.Fight()
 
